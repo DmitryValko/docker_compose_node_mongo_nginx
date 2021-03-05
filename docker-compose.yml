@@ -1,0 +1,58 @@
+version: "3"
+
+services:
+
+  database:
+    image: "mongo" 
+    container_name: "mongodb"
+    environment:
+        MONGO_INITDB_ROOT_USERNAME: USERNAME
+        MONGO_INITDB_ROOT_PASSWORD: USERPASSWORD
+    #  deploy:
+      #  replicas: 1
+    volumes:
+      - /root/data/mongod:/root/data
+      - /root/logs/mongod:/root/logs
+      - ./dbconfig/mongod.conf:/etc/dbconfig/mongod.conf
+    entrypoint: ["mongod","--config","/etc/dbconfig/mongod.conf"]
+    ports: 
+      - 27017:27017
+    networks: 
+        - app-network
+  app:
+    image: "back" 
+    container_name: "back"
+    build:
+      context: .
+      dockerfile: "./back/Dockerfile"
+    # restart: always
+    ports: 
+      - "3000"
+    depends_on: 
+      - database
+    networks: 
+      - app-network
+
+  nginx:
+      image: "nginx" 
+      container_name: "nginx"
+      build:
+        context: .
+        dockerfile: "./nginx/nginx.dockerfile"
+      links: 
+        - app:app
+      depends_on: 
+        - app
+      ports: 
+        - "8080:80"
+      networks: 
+        - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+
+# start container => docker-compose up --build database
+# connect => docker exec -it mongodb bash => after connect to mongo for 'mongo' and create user if you want auth database 
+ 
